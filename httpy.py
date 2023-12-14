@@ -31,29 +31,20 @@ def fetch_resp(urllist, proxy=None, max_conn=None, single_waiting=None):
         global succeeded
         global failed
 
-        try:
-            async with session.get(url, proxy=proxy, allow_redirects=False) as resp:
-                text = await resp.text()
-                succeeded += 1
-                sys.stdout.write(f'{url} [{resp.status}]\n')
-        except (
-            asyncio.TimeoutError,
-            aiohttp.ClientConnectorCertificateError,
-            aiohttp.ClientConnectionError,
-            aiohttp.ClientOSError,
-            aiohttp.ClientConnectorError,
-            aiohttp.ClientProxyConnectionError,
-            aiohttp.ClientSSLError,
-            aiohttp.ClientConnectorSSLError,
-            aiohttp.ClientPayloadError,
-            aiohttp.ClientResponseError,
-            aiohttp.ClientHttpProxyError,
-            aiohttp.WSServerHandshakeError,
-            aiohttp.ContentTypeError,
-        ) as e:
-            failed += 1
-        except (RuntimeError, UnicodeDecodeError,) as e:
-            failed += 1
+        for protocol in ['https', 'http']:
+            if not re.search('^https?://', url):
+                _url = f'{protocol}://{url}'
+            else:
+                _url = url
+            try:
+                async with session.get(_url, proxy=proxy, allow_redirects=False) as resp:
+                    text = await resp.text()
+                    succeeded += 1
+                    sys.stdout.write(f'{_url} [{resp.status}]\n')
+            except (asyncio.TimeoutError, aiohttp.ClientConnectorCertificateError, aiohttp.ClientConnectionError, aiohttp.ClientOSError, aiohttp.ClientConnectorError, aiohttp.ClientProxyConnectionError, aiohttp.ClientSSLError, aiohttp.ClientConnectorSSLError, aiohttp.ClientPayloadError, aiohttp.ClientResponseError, aiohttp.ClientHttpProxyError, aiohttp.WSServerHandshakeError, aiohttp.ContentTypeError,) as e:
+                failed += 1
+            except (RuntimeError, UnicodeDecodeError,) as e:
+                failed += 1
 
     async def main():
         timeout = aiohttp.ClientTimeout(total=single_waiting, sock_connect=single_waiting, sock_read=single_waiting)
